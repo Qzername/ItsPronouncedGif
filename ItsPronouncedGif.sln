@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34408.163
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ItsPronouncedGif", "ItsPronouncedGif\ItsPronouncedGif.csproj", "{B1D8864A-17F1-40EC-B7B2-2F53030D94AE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ItsPronouncedGif.Desktop", "ItsPronouncedGif.Desktop\ItsPronouncedGif.Desktop.csproj", "{E448C5CB-B828-45AE-8AE5-40C8A421E901}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B1D8864A-17F1-40EC-B7B2-2F53030D94AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1D8864A-17F1-40EC-B7B2-2F53030D94AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1D8864A-17F1-40EC-B7B2-2F53030D94AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1D8864A-17F1-40EC-B7B2-2F53030D94AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E448C5CB-B828-45AE-8AE5-40C8A421E901}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E448C5CB-B828-45AE-8AE5-40C8A421E901}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E448C5CB-B828-45AE-8AE5-40C8A421E901}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E448C5CB-B828-45AE-8AE5-40C8A421E901}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1D6BF7F0-79A1-4F9D-8204-038999EEEE1C}
+	EndGlobalSection
+EndGlobal
