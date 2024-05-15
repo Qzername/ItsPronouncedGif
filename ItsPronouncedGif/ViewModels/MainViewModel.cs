@@ -2,5 +2,11 @@
 
 public class MainViewModel : ViewModelBase
 {
-    public string Greeting => "Welcome to Avalonia!";
+    public void CompileGIF()
+    {
+        GifHandler gif = new GifHandler();
+
+        gif.AddPicture();
+        gif.Compile("");
+    }
 }

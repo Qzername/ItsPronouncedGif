@@ -15,7 +15,7 @@
 
 	<Panel VerticalAlignment="Center" HorizontalAlignment="Center">
 		<StackPanel Orientation="Horizontal">
-			<Button>Create</Button>
+			<Button Command="{Binding CompileGIF}">Create</Button>
 		</StackPanel>	
 	</Panel>
 </UserControl>
