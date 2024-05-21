@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -10,6 +11,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ItsPronouncedGif
 {
+    //See: https://www.oreilly.com/library/view/programming-web-graphics/1565924789/ch01s02.html
     public class GifHandler
     {
         Stream stream;
@@ -30,17 +32,15 @@ namespace ItsPronouncedGif
         {
             BinaryWriter writer = new BinaryWriter(stream);
 
-            //See: https://en.wikipedia.org/wiki/GIF
-            //Also: https://www.oreilly.com/library/view/programming-web-graphics/1565924789/ch01s02.html
-
             //Header - version of gif
-            writer.Write("GIF89a");
+            writer.Write(new char[3] { 'G', 'I', 'F' });
+            writer.Write(new char[3] { '8', '9', 'a' });
 
             // --- LSD ---
-            
+
             //width and height
-            writer.Write(3);
-            writer.Write(5);
+            writer.Write((short)5);
+            writer.Write((short)3);
 
             //Color table information
             BitArray cti = new BitArray(new byte[1]);
@@ -66,32 +66,32 @@ namespace ItsPronouncedGif
             writer.Write(b);
 
             //Background color index
-            writer.Write(Convert.ToByte(0));
+            writer.Write(Convert.ToByte(3));
 
             //Pixel aspect ratio
-            writer.Write(Convert.ToByte(0)); 
+            writer.Write(Convert.ToByte(0));
 
             //  --- GCT --- 
-            writer.Write(Convert.ToByte(255)); // white
-            writer.Write(Convert.ToByte(255));
-            writer.Write(Convert.ToByte(255));
-            writer.Write(Convert.ToByte(255)); // red
-            writer.Write(Convert.ToByte(0));
-            writer.Write(Convert.ToByte(0));
-            writer.Write(Convert.ToByte(0)); // blue
-            writer.Write(Convert.ToByte(0));
-            writer.Write(Convert.ToByte(255));
-            writer.Write(Convert.ToByte(0)); // black
-            writer.Write(Convert.ToByte(0));
-            writer.Write(Convert.ToByte(0));
+            writer.Write((byte)255);//w
+            writer.Write((byte)255);
+            writer.Write((byte)255);
+            writer.Write((byte)0);//b
+            writer.Write((byte)0);
+            writer.Write((byte)0);
+            writer.Write((byte)255);//r
+            writer.Write((byte)0);
+            writer.Write((byte)0);
+            writer.Write((byte)0);//g
+            writer.Write((byte)255);
+            writer.Write((byte)0);
 
             // --- Picture ---
             //Picture descriptor
             writer.Write(Convert.ToByte(0x2c)); //img separator character
             writer.Write(Convert.ToInt16(0)); //img left position
             writer.Write(Convert.ToInt16(0)); //img top positon                    
-            writer.Write(Convert.ToInt16(3)); //img width                    
-            writer.Write(Convert.ToInt16(5)); //img height
+            writer.Write(Convert.ToInt16(5)); //img width                    
+            writer.Write(Convert.ToInt16(3)); //img height
                                                  
             var desc = new BitArray(new byte[1]);
             desc[0] = false; // local color table present
@@ -104,114 +104,89 @@ namespace ItsPronouncedGif
             b = new byte[1];
             desc.CopyTo(b, 0);
             writer.Write(b);
+            b = [0];
 
             //Picture data
             //DEBUG: EXAMPLE DATA
-            List<int> pixelData =
+            int[] pixelData =
             [
-                1,
-                1,
-                1,
-                1,
-                1,
-                2,
-                2,
-                2,
-                2,
-                2,
-                1,
-                1,
-                1,
-                1,
-                1,
+               1,
+               1,
+               1,
+               1,
+               1,
+               2,
+               2,
+               2,
+               2,
+               2,
+               1,
+               1,
+               1,
+               1,
+               1,
             ];
 
-            string result = LZW(pixelData);
-            b = GetBytes(result);
+            //getting lzw min code
+            int max = pixelData.Max();
+            int minCode = Convert.ToInt32(Math.Floor(Math.Log2(max)));
+
+            if (minCode < 2)
+                minCode = 2;
+
+            var data = LZWCompression(pixelData, minCode);
             
-            writer.Write(Convert.ToByte(2)); //lzw minimum code size
+            writer.Write(Convert.ToByte(minCode)); //lzw minimum code size
             writer.Write(Convert.ToByte(b.Length)); //number of bytes in sub-block
-            
+          
             for (int i = 0; i < b.Length; i++)
                 writer.Write(b[i]);
 
-            writer.Write(Convert.ToByte(0));
             writer.Write(Convert.ToByte(0x3b)); //End of GIF
+
+            writer.Close();
+            stream.Close();
         }
 
-        // Code from below is taken from: https://gist.github.com/reZach/28247e4616c2596fc282b6167740e3f8
-
-        // https://rosettacode.org/wiki/LZW_compression#C.23
-        static string LZW(List<int> pixelImageData)
+        int[] LZWCompression(int[] data, int minCode)
         {
-            // build the dictionary
-            Dictionary<string, int> dictionary = new Dictionary<string, int>();
-            for (int i = 0; i < 4; i++)
-                dictionary.Add(i.ToString(), i);
-
-            dictionary.Add(5.ToString(), 5);
-            dictionary.Add(6.ToString(), 6);
-
-            string w = pixelImageData[0].ToString();// string.Empty;
+            List<string> codes = new List<string>();
             List<int> compressed = new List<int>();
 
-            string returnMe = string.Empty;
-            double codeSize = 3.0; // this is in bits
+            int colorsAmount = Convert.ToInt32(Math.Pow(2, minCode));
 
-            foreach (int i in pixelImageData)
+            int clearCode = colorsAmount;
+            int EOIcode = colorsAmount + 1;
+
+            //filling color codes wtih additional codes
+            for (int i = 0; i < colorsAmount + 2; i++)
+                codes.Add(i.ToString());
+            
+            //send clear code
+            compressed.Add(clearCode);
+
+
+            string buffer = data[0].ToString();
+
+            for(int i = 1; i < data.Length; i++)
             {
-                string wc = w + i;
-                if (dictionary.ContainsKey(wc))
-                {
-                    w = wc;
-                }
+                var k = data[i];
+                string strK = $" {k}";
+
+                if(codes.Contains(buffer + strK))
+                    buffer += strK;
                 else
                 {
-
-                    // write w to output                    
-                    compressed.Add(dictionary[w]);
-
-                    returnMe = reverse(Convert.ToString(((byte)dictionary[w]), 2).PadLeft((int)codeSize, '0')) + returnMe;
-                    if (Math.Pow(2.0, codeSize) - 1 == dictionary.Count)
-                    {
-                        codeSize += 1.0;
-                    }
-
-                    // wc is a new sequence; add it to the dictionary
-                    dictionary.Add(wc, dictionary.Count);
-                    w = i.ToString();
+                    codes.Add(buffer + strK);
+                    compressed.Add(codes.IndexOf(buffer));
+                    buffer = k.ToString();
                 }
             }
 
-            // write remaining output if necessary
-            if (!string.IsNullOrEmpty(w))
-                compressed.Add(dictionary[w]);
+            compressed.Add(codes.IndexOf(buffer));
+            compressed.Add(EOIcode);
 
-            return returnMe; //compressed;
-        }
-
-        static string reverse(string s)
-        {
-            char[] charArray = s.ToCharArray();
-            Array.Reverse(charArray);
-            return new string(charArray);
-        }
-
-        static byte[] GetBytes(string bitString)
-        {
-            byte[] result = Enumerable.Range(0, bitString.Length / 8).
-                Select(pos => Convert.ToByte(
-                    bitString.Substring(pos * 8, 8),
-                    2)
-                ).ToArray();
-
-            List<byte> mahByteArray = new List<byte>();
-            for (int i = result.Length - 1; i >= 0; i--)
-            {
-                mahByteArray.Add(result[i]);
-            }
-
-            return mahByteArray.ToArray();
+            return compressed.ToArray();
         }
     }
 }
