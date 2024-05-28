@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Avalonia.Controls.Platform;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,8 +40,8 @@ namespace ItsPronouncedGif
             // --- LSD ---
 
             //width and height
-            writer.Write((short)5);
-            writer.Write((short)3);
+            writer.Write((short)10);
+            writer.Write((short)10);
 
             //Color table information
             BitArray cti = new BitArray(new byte[1]);
@@ -75,14 +76,14 @@ namespace ItsPronouncedGif
             writer.Write((byte)255);//w
             writer.Write((byte)255);
             writer.Write((byte)255);
-            writer.Write((byte)0);//b
-            writer.Write((byte)0);
-            writer.Write((byte)0);
             writer.Write((byte)255);//r
             writer.Write((byte)0);
             writer.Write((byte)0);
-            writer.Write((byte)0);//g
+            writer.Write((byte)0);//b
+            writer.Write((byte)0);
             writer.Write((byte)255);
+            writer.Write((byte)0);//black
+            writer.Write((byte)0);
             writer.Write((byte)0);
 
             // --- Picture ---
@@ -90,8 +91,8 @@ namespace ItsPronouncedGif
             writer.Write(Convert.ToByte(0x2c)); //img separator character
             writer.Write(Convert.ToInt16(0)); //img left position
             writer.Write(Convert.ToInt16(0)); //img top positon                    
-            writer.Write(Convert.ToInt16(5)); //img width                    
-            writer.Write(Convert.ToInt16(3)); //img height
+            writer.Write(Convert.ToInt16(10)); //img width                    
+            writer.Write(Convert.ToInt16(10)); //img height
                                                  
             var desc = new BitArray(new byte[1]);
             desc[0] = false; // local color table present
@@ -110,21 +111,16 @@ namespace ItsPronouncedGif
             //DEBUG: EXAMPLE DATA
             int[] pixelData =
             [
-               1,
-               1,
-               1,
-               1,
-               1,
-               2,
-               2,
-               2,
-               2,
-               2,
-               1,
-               1,
-               1,
-               1,
-               1,
+               1,1,1,1,1,2,2,2,2,2,
+               1,1,1,1,1,2,2,2,2,2,
+               1,1,1,1,1,2,2,2,2,2,
+               1,1,1,0,0,0,0,2,2,2,
+               1,1,1,0,0,0,0,2,2,2,
+               2,2,2,0,0,0,0,1,1,1,
+               2,2,2,0,0,0,0,1,1,1,
+               2,2,2,2,2,1,1,1,1,1,
+               2,2,2,2,2,1,1,1,1,1,
+               2,2,2,2,2,1,1,1,1,1,
             ];
 
             //getting lzw min code
@@ -135,6 +131,7 @@ namespace ItsPronouncedGif
                 minCode = 2;
 
             var data = LZWCompression(pixelData, minCode);
+            b = GetBytes(data, minCode);
             
             writer.Write(Convert.ToByte(minCode)); //lzw minimum code size
             writer.Write(Convert.ToByte(b.Length)); //number of bytes in sub-block
@@ -148,6 +145,9 @@ namespace ItsPronouncedGif
             stream.Close();
         }
 
+        /// <summary>
+        /// can also return -1 that means that you have to increase code size
+        /// </summary>
         int[] LZWCompression(int[] data, int minCode)
         {
             List<string> codes = new List<string>();
@@ -165,8 +165,9 @@ namespace ItsPronouncedGif
             //send clear code
             compressed.Add(clearCode);
 
-
             string buffer = data[0].ToString();
+
+            bool nextAdd1 = false;
 
             for(int i = 1; i < data.Length; i++)
             {
@@ -180,6 +181,23 @@ namespace ItsPronouncedGif
                     codes.Add(buffer + strK);
                     compressed.Add(codes.IndexOf(buffer));
                     buffer = k.ToString();
+
+
+                    if (nextAdd1)
+                    {
+                        compressed.Add(-1);
+                        nextAdd1 = false;
+                        continue;
+                    }
+                        
+                    if (Math.Pow(2, minCode + 1) - 1 == codes.Count-1)
+                    {
+                        nextAdd1 = true;
+
+                        Debug.WriteLine(codes[^1]);
+
+                        minCode++;
+                    }
                 }
             }
 
@@ -187,6 +205,54 @@ namespace ItsPronouncedGif
             compressed.Add(EOIcode);
 
             return compressed.ToArray();
+        }
+
+        byte[] GetBytes(int[] lzwData, int minCode)
+        {
+            string input = string.Empty;
+
+            Debug.WriteLine("aaaaaa");
+
+            foreach(var d in lzwData)
+            {
+                Debug.WriteLine(d); 
+
+                if(d == -1)
+                {
+                    minCode++;
+                    continue;
+                }
+
+                Debug.WriteLine(Convert.ToString(d, 2).PadLeft(minCode + 1, '0'));
+
+                input = Convert.ToString(d, 2).PadLeft(minCode + 1, '0') + input;
+            }
+
+            Debug.WriteLine(input);
+            Debug.WriteLine(input.Length);
+
+            if (input.Length % 8 != 0)
+                input = input.PadLeft(((input.Length / 8 + 1) * 8) , '0');
+
+            Debug.WriteLine(input.Length);
+
+            Debug.WriteLine(input);
+
+            //debug value
+            /*string s = "000001100010110110001100";
+            s = "1000110000101101";*/
+
+            //convert string back to bytes
+            int nBytes = input.Length / 8;
+            var bytesAsStrings =
+                Enumerable.Range(0, nBytes)
+                          .Select(i => input.Substring(8 * i, 8)).Reverse();
+            byte[] bytes = bytesAsStrings.Select(s => Convert.ToByte(s, 2)).ToArray();
+
+            foreach (var b in bytes)
+                Debug.WriteLine(Convert.ToString(b, 2));
+
+            return bytes;
         }
     }
 }
