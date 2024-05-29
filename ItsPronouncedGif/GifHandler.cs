@@ -67,7 +67,7 @@ namespace ItsPronouncedGif
             writer.Write(b);
 
             //Background color index
-            writer.Write(Convert.ToByte(3));
+            writer.Write(Convert.ToByte(0));
 
             //Pixel aspect ratio
             writer.Write(Convert.ToByte(0));
@@ -105,7 +105,6 @@ namespace ItsPronouncedGif
             b = new byte[1];
             desc.CopyTo(b, 0);
             writer.Write(b);
-            b = [0];
 
             //Picture data
             //DEBUG: EXAMPLE DATA
@@ -139,6 +138,7 @@ namespace ItsPronouncedGif
             for (int i = 0; i < b.Length; i++)
                 writer.Write(b[i]);
 
+            writer.Write(Convert.ToByte(0)); //without it everything is moved one pixel down
             writer.Write(Convert.ToByte(0x3b)); //End of GIF
 
             writer.Close();
