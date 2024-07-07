@@ -7,15 +7,18 @@
              x:Class="ItsPronouncedGif.Views.MainView"
              x:DataType="vm:MainViewModel">
   <Design.DataContext>
-    <!-- This only sets the DataContext for the previewer in an IDE,
-         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
     <vm:MainViewModel />
   </Design.DataContext>
     
 
 	<Panel VerticalAlignment="Center" HorizontalAlignment="Center">
-		<StackPanel Orientation="Horizontal">
-			<Button Command="{Binding CompileGIF}">Create Example gif</Button>
+		<StackPanel>
+			<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding width}" Watermark="Width"/>
+			<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding height}" Watermark="Height"/>
+			<TextBox Text="{Binding x}"  Watermark="X pos"/>
+			<TextBox Text="{Binding y}"  Watermark="Y pos"/>
+			<Button Command="{Binding AddFrame}">Add Frame</Button>
+			<Button Command="{Binding Compile}">Compile</Button>
 		</StackPanel>	
 	</Panel>
 </UserControl>

@@ -1,24 +1,41 @@
-﻿namespace ItsPronouncedGif.ViewModels;
+﻿using Avalonia.Media;
+using ItsPronouncedGif.ScreenInteractions;
+using ReactiveUI.Fody.Helpers;
+using System.Diagnostics;
+
+namespace ItsPronouncedGif.ViewModels;
 
 public class MainViewModel : ViewModelBase
 {
-    public void CompileGIF()
+    [Reactive] int width { get; set; } = 5;
+    [Reactive] int height { get; set; } = 5;
+    [Reactive] int x { get; set; } = 100;
+    [Reactive] int y { get; set; } = 100;
+
+    [Reactive] bool isTextBoxesEnabled { get; set; } = true;
+
+    GifCreator gif;
+    Screen screen;
+
+    public MainViewModel()
     {
-        GifHandler gif = new GifHandler(10,10);
+        screen = new Screen();
+    }
 
-        gif.AddPicture([
-            1,1,1,1,1,2,2,2,2,2,
-            1,1,1,1,1,2,2,2,2,2,
-            1,1,1,1,1,2,2,2,2,2,
-            1,1,1,0,0,0,0,2,2,2,
-            1,1,1,0,0,0,0,2,2,2,
-            2,2,2,0,0,0,0,1,1,1,
-            2,2,2,0,0,0,0,1,1,1,
-            2,2,2,2,2,1,1,1,1,1,
-            2,2,2,2,2,1,1,1,1,1,
-            2,2,2,2,2,1,1,1,1,1,
-        ]);
+    public void AddFrame()
+    {
+        if (isTextBoxesEnabled)
+        {
+            gif = new GifCreator(width, height);
+            isTextBoxesEnabled = false;
+        }
 
-        gif.Compile("./example.gif");
+        gif.AddPicture(screen.CaptureScreen(x, y, width, height));
+    }
+
+    public void Compile()
+    {
+        gif.Compile("./result.gif");
+        isTextBoxesEnabled = true;
     }
 }
