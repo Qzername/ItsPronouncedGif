@@ -12,25 +12,39 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ItsPronouncedGif
 {
-    //See: https://www.oreilly.com/library/view/programming-web-graphics/1565924789/ch01s02.html
+    //See: https://giflib.sourceforge.net/whatsinagif/index.html
     public class GifHandler
     {
+        /*
+         * TODO:
+         * - gif animations
+         * - automatic pixel data
+         * - spliting into subblocks with their own color table
+         */
+
+        int width, height;
+
         Stream stream;
+        List<int[]> pictures;
 
-        List<int> picture;
-
-        public GifHandler()
+        public GifHandler(int width, int height)
         {
-            stream = new FileStream("./test.gif",FileMode.Create);
+            pictures = new List<int[]>();
+            this.width = width;
+            this.height = height;
         }
 
-        public void AddPicture()
+        public void AddPicture(int[] pixelData)
         {
-            picture = new List<int>();
+            if (pixelData.Length != width * height)
+                throw new Exception("Pixel data length is not correct");
+
+            pictures.Add(pixelData);
         }
 
         public void Compile(string path)
         {
+            stream = new FileStream(path, FileMode.Create);
             BinaryWriter writer = new BinaryWriter(stream);
 
             //Header - version of gif
@@ -40,8 +54,8 @@ namespace ItsPronouncedGif
             // --- LSD ---
 
             //width and height
-            writer.Write((short)10);
-            writer.Write((short)10);
+            writer.Write((short)width);
+            writer.Write((short)height);
 
             //Color table information
             BitArray cti = new BitArray(new byte[1]);
@@ -91,8 +105,8 @@ namespace ItsPronouncedGif
             writer.Write(Convert.ToByte(0x2c)); //img separator character
             writer.Write(Convert.ToInt16(0)); //img left position
             writer.Write(Convert.ToInt16(0)); //img top positon                    
-            writer.Write(Convert.ToInt16(10)); //img width                    
-            writer.Write(Convert.ToInt16(10)); //img height
+            writer.Write(Convert.ToInt16(width)); //img width                    
+            writer.Write(Convert.ToInt16(height)); //img height
                                                  
             var desc = new BitArray(new byte[1]);
             desc[0] = false; // local color table present
@@ -108,20 +122,7 @@ namespace ItsPronouncedGif
 
             //Picture data
             //DEBUG: EXAMPLE DATA
-            int[] pixelData =
-            [
-               1,1,1,1,1,2,2,2,2,2,
-               1,1,1,1,1,2,2,2,2,2,
-               1,1,1,1,1,2,2,2,2,2,
-               1,1,1,0,0,0,0,2,2,2,
-               1,1,1,0,0,0,0,2,2,2,
-               2,2,2,0,0,0,0,1,1,1,
-               2,2,2,0,0,0,0,1,1,1,
-               2,2,2,2,2,1,1,1,1,1,
-               2,2,2,2,2,1,1,1,1,1,
-               2,2,2,2,2,1,1,1,1,1,
-            ];
-
+            int[] pixelData = pictures[0];
             //getting lzw min code
             int max = pixelData.Max();
             int minCode = Convert.ToInt32(Math.Floor(Math.Log2(max)));
@@ -211,36 +212,19 @@ namespace ItsPronouncedGif
         {
             string input = string.Empty;
 
-            Debug.WriteLine("aaaaaa");
-
             foreach(var d in lzwData)
             {
-                Debug.WriteLine(d); 
-
                 if(d == -1)
                 {
                     minCode++;
                     continue;
                 }
 
-                Debug.WriteLine(Convert.ToString(d, 2).PadLeft(minCode + 1, '0'));
-
                 input = Convert.ToString(d, 2).PadLeft(minCode + 1, '0') + input;
             }
 
-            Debug.WriteLine(input);
-            Debug.WriteLine(input.Length);
-
             if (input.Length % 8 != 0)
                 input = input.PadLeft(((input.Length / 8 + 1) * 8) , '0');
-
-            Debug.WriteLine(input.Length);
-
-            Debug.WriteLine(input);
-
-            //debug value
-            /*string s = "000001100010110110001100";
-            s = "1000110000101101";*/
 
             //convert string back to bytes
             int nBytes = input.Length / 8;
