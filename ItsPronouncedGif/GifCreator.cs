@@ -14,10 +14,11 @@ namespace ItsPronouncedGif
     {
         /*
          * TODO:
+         * - fix up GCT colors (partialy done)
          * - automatic pixel data (partialy done)
          * - gif animations (partialy done)
          * - faster LZW encoding 
-         * - better color handling 
+         * - better color handling -> color compression
          */
 
         int width, height;
@@ -39,7 +40,6 @@ namespace ItsPronouncedGif
             if (gct is null)
             {
                 gct = new List<Color>();
-                gct.Add(Color.FromRgb(0, 128, 0));
             }
 
             int[] pixelData = new int[picture.Length];
@@ -52,7 +52,7 @@ namespace ItsPronouncedGif
 
                     if(gct.Count == 256)
                     {
-                        pixelData[y*width+x] = 255;
+                        pixelData[y*width+x] = 100;
                         continue;
                     }
 
@@ -65,7 +65,7 @@ namespace ItsPronouncedGif
                     }
                 }
 
-            Debug.WriteLine(gct.Count);
+            Debug.WriteLine("GCT length: " + gct.Count);
 
             pictures.Add(pixelData);
         }
@@ -74,7 +74,6 @@ namespace ItsPronouncedGif
         {
             while (gct.Count < 256)
                 gct.Add(Color.FromRgb(0, 0, 0));
-            Debug.WriteLine(gct.Count);
 
             stream = new FileStream(path, FileMode.Create);
             BinaryWriter writer = new BinaryWriter(stream);
@@ -197,39 +196,41 @@ namespace ItsPronouncedGif
                 //getting lzw min code
                 int max = pixelData.Max();
 
+                Debug.WriteLine("max: " + max);
+
                 if (max == 0)
                     max = 1;
 
-                int minCode = Convert.ToInt32(Math.Floor(Math.Log2(max)));
+                int minCode = Convert.ToInt32(Math.Ceiling(Math.Log2(max+1)));
 
                 if (minCode < 2)
                     minCode = 2;
 
-                Debug.WriteLine("a");
-
                 var data = LZWCompression(pixelData, minCode);
-                Debug.WriteLine("b");
                 b = GetBytes(data, minCode);
-                Debug.WriteLine("c");
 
                 writer.Write(Convert.ToByte(minCode)); //lzw minimum code size
 
                 int bytesRemaining = b.Length;
 
-                for (int a = 0; a < b.Length / 255 + 1; a++)
-                {
-                    writer.Write(Convert.ToByte(bytesRemaining > 255 ? 255 : bytesRemaining)); //number of bytes in sub-block
+                Debug.WriteLine(b.Length);
 
-                    for (int Bi = 0; Bi < b.Length; Bi++)
-                        writer.Write(b[Bi]);
+                for (int a = 0; a < b.Length / 255+1; a++)
+                {
+                    var currentBlockLength = bytesRemaining > 255 ? 255 : bytesRemaining;
+
+                    writer.Write((byte)currentBlockLength); //number of bytes in sub-block
+
+                    for (int Bi = 0; Bi < currentBlockLength; Bi++)
+                        writer.Write(b[Bi + a*255]);
 
                     bytesRemaining -= 255;
                 }
 
-                writer.Write(Convert.ToByte(0)); //block terminator
+                writer.Write(Convert.ToByte(0)); //0 bytes comming
             }
 
-            writer.Write(Convert.ToByte(0x3b)); //End of GIF
+            writer.Write(Convert.ToByte(0x3b)); //End of GIF - block terminator
 
             writer.Close();
             stream.Close();
@@ -244,6 +245,8 @@ namespace ItsPronouncedGif
             List<int> compressed = new List<int>();
 
             int colorsAmount = Convert.ToInt32(Math.Pow(2, minCode));
+
+            Debug.WriteLine("Colors registered: " + colorsAmount);
 
             int clearCode = colorsAmount;
             int EOIcode = colorsAmount + 1;

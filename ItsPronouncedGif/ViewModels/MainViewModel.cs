@@ -7,8 +7,8 @@ namespace ItsPronouncedGif.ViewModels;
 
 public class MainViewModel : ViewModelBase
 {
-    [Reactive] int width { get; set; } = 5;
-    [Reactive] int height { get; set; } = 5;
+    [Reactive] int width { get; set; } = 493;
+    [Reactive] int height { get; set; } = 493;
     [Reactive] int x { get; set; } = 100;
     [Reactive] int y { get; set; } = 100;
 
