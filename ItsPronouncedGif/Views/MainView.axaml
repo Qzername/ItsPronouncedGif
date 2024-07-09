@@ -12,13 +12,19 @@
     
 
 	<Panel VerticalAlignment="Center" HorizontalAlignment="Center">
-		<StackPanel>
-			<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding width}" Watermark="Width"/>
-			<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding height}" Watermark="Height"/>
-			<TextBox Text="{Binding x}"  Watermark="X pos"/>
-			<TextBox Text="{Binding y}"  Watermark="Y pos"/>
-			<Button Command="{Binding AddFrame}">Add Frame</Button>
-			<Button Command="{Binding Compile}">Compile</Button>
-		</StackPanel>	
+		<StackPanel Orientation="Horizontal">
+			<StackPanel>
+				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding width}" Watermark="Width"/>
+				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding height}" Watermark="Height"/>
+				<TextBox Text="{Binding x}"  Watermark="X pos"/>
+				<TextBox Text="{Binding y}"  Watermark="Y pos"/>
+				<Button Command="{Binding AddFrame}">Add Frame</Button>
+				<Button Command="{Binding Compile}">Compile</Button>
+			</StackPanel>
+			<Panel>
+				<Image Source="{Binding result}" Stretch="None"/>
+				<TextBlock Foreground="Red" Text="ERROR" IsVisible="{Binding showResultError}"/>
+			</Panel>
+		</StackPanel>
 	</Panel>
 </UserControl>
