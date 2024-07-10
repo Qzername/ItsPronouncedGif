@@ -10,6 +10,7 @@ using System.Linq;
 namespace ItsPronouncedGif
 {
     //See: https://giflib.sourceforge.net/whatsinagif/index.html
+    //also: https://www.matthewflickinger.com/lab/whatsinagif/
     public class GifCreator
     {
         /*
@@ -40,33 +41,36 @@ namespace ItsPronouncedGif
             if (gct is null)
             {
                 gct = new List<Color>();
+                gct.Add(Color.FromRgb(255, 0, 0));
             }
 
             int[] pixelData = new int[picture.Length];
 
             //temp solution
             for (int y = 0; y < picture.GetLength(1);y++)
-                for(int x = 0; x < picture.GetLength(0);x++)
-                {
-                    var color = picture[x,y];
+            {
+                string keys = string.Empty;
 
-                    if(gct.Count == 256)
-                    {
-                        pixelData[y*width+x] = 100;
-                        continue;
-                    }
+                for (int x = 0; x < picture.GetLength(0); x++)
+                {
+                    var color = picture[x, y];
 
                     if (gct.Contains(color))
+                    {
                         pixelData[y * width + x] = gct.IndexOf(color);
+                    }
+                    else if (gct.Count == 256)
+                        pixelData[y * width + x] = 0;
                     else
                     {
                         pixelData[y * width + x] = gct.Count;
                         gct.Add(color);
                     }
+
+                    keys += gct[pixelData[y * width + x]] + " ";
                 }
-
-            Debug.WriteLine("GCT length: " + gct.Count);
-
+            }
+                
             pictures.Add(pixelData);
         }
 
@@ -127,10 +131,10 @@ namespace ItsPronouncedGif
 
             // --- Application Extension --- 
             writer.Write((byte)0x21); //extension introducer
-            writer.Write((byte)0xFF); 
+            writer.Write((byte)0xFF);
             writer.Write((byte)0x0B); //11 bytes comming
-            writer.Write(new char[8] { 'N', 'E', 'T', 'S', 'C', 'A', 'P', 'E' }) ;
-            writer.Write(new char[3] { '2', '.', '0' }) ;
+            writer.Write(new char[8] { 'N', 'E', 'T', 'S', 'C', 'A', 'P', 'E' });
+            writer.Write(new char[3] { '2', '.', '0' });
             writer.Write((byte)0x03);
             writer.Write((byte)0x01);
             writer.Write((byte)0);
@@ -213,9 +217,7 @@ namespace ItsPronouncedGif
 
                 int bytesRemaining = b.Length;
 
-                Debug.WriteLine(b.Length);
-
-                for (int a = 0; a < b.Length / 255+1; a++)
+                for (int a = 0; a < Math.Ceiling(b.Length / 255f); a++)
                 {
                     var currentBlockLength = bytesRemaining > 255 ? 255 : bytesRemaining;
 
@@ -241,6 +243,8 @@ namespace ItsPronouncedGif
         /// </summary>
         int[] LZWCompression(int[] data, int minCode)
         {
+            int oldMinCode = minCode;
+
             List<string> codes = new List<string>();
             List<int> compressed = new List<int>();
 
@@ -271,8 +275,24 @@ namespace ItsPronouncedGif
                     buffer += strK;
                 else
                 {
+                    if (codes.Count == 4096) //limit for the mincode
+                    {
+                        break; //temp solution
+                        compressed.Add(clearCode);
+
+                        List<int> tempData = new List<int>();
+
+                        for (int x = i; x < data.Length; x++)
+                            tempData.Add(data[x]);
+
+                        compressed.AddRange(LZWCompression(tempData.ToArray(), oldMinCode));
+                        compressed.RemoveAt(compressed.Count - 1);
+                        compressed.RemoveAt(compressed.Count - 1);
+                    }
+
                     codes.Add(buffer + strK);
                     compressed.Add(codes.IndexOf(buffer));
+
                     buffer = k.ToString();
 
 
@@ -282,11 +302,10 @@ namespace ItsPronouncedGif
                         nextAdd1 = false;
                         continue;
                     }
-                        
+
                     if (Math.Pow(2, minCode + 1) - 1 == codes.Count-1)
                     {
                         nextAdd1 = true;
-
                         minCode++;
                     }
                 }

@@ -33,15 +33,7 @@ public class MainViewModel : ViewModelBase
             isTextBoxesEnabled = false;
         }
 
-        //gif.AddPicture(screen.CaptureScreen(x, y, width, height));
-
-        Color[,] pic = new Color[width, height];
-
-        for (int x = 0; x < width; x++)
-            for (int y = 0; y < height; y++)
-                pic[x, y] = Color.FromRgb((byte)(x<255? x/(float)width*255 : 255) , 255, 255);
-
-        gif.AddPicture(pic);
+        gif.AddPicture(screen.CaptureScreen(x, y, width, height));
     }
 
     public void Compile()
