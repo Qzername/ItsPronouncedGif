@@ -2,6 +2,8 @@
 using Avalonia.Media.Imaging;
 using ItsPronouncedGif.ScreenInteractions;
 using ReactiveUI.Fody.Helpers;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace ItsPronouncedGif.ViewModels;
 
@@ -16,9 +18,14 @@ public class MainViewModel : ViewModelBase
     [Reactive] bool showResultError { get; set; } = false;
 
     [Reactive] bool isTextBoxesEnabled { get; set; } = true;
+    [Reactive] bool isRecording { get; set; } = false;
 
-    GifCreator gif;
-    Screen screen;
+    volatile bool vIsRecording;
+
+    volatile GifCreator gif;
+    volatile Screen screen;
+
+    Task recording;
 
     public MainViewModel()
     {
@@ -27,13 +34,33 @@ public class MainViewModel : ViewModelBase
 
     public void AddFrame()
     {
-        if (isTextBoxesEnabled)
-        {
-            gif = new GifCreator(width, height);
-            isTextBoxesEnabled = false;
-        }
-
+        CreateGifCreator();
         gif.AddPicture(screen.CaptureScreen(x, y, width, height));
+    }
+
+    public void Record()
+    {
+        CreateGifCreator();
+
+        isRecording = true;
+        vIsRecording = true;
+
+        recording = new Task(() =>
+        {
+            while(vIsRecording)
+            {
+                gif.AddPicture(screen.CaptureScreen(x, y, width, height));
+                await Task.Delay(1000);
+            }
+        });
+
+        recording.Start();
+    }
+
+    public void StopRecord()
+    {
+        isRecording = false;
+        vIsRecording = false;
     }
 
     public void Compile()
@@ -50,6 +77,15 @@ public class MainViewModel : ViewModelBase
         catch(System.Exception)
         {
             showResultError= true;
+        }
+    }
+
+    void CreateGifCreator()
+    {
+        if (isTextBoxesEnabled)
+        {
+            gif = new GifCreator(width, height);
+            isTextBoxesEnabled = false;
         }
     }
 }

@@ -13,15 +13,6 @@ namespace ItsPronouncedGif
     //also: https://www.matthewflickinger.com/lab/whatsinagif/
     public class GifCreator
     {
-        /*
-         * TODO:
-         * - fix up GCT colors (partialy done)
-         * - automatic pixel data (partialy done)
-         * - gif animations (partialy done)
-         * - faster LZW encoding 
-         * - better color handling -> color compression
-         */
-
         int width, height;
 
         Stream stream;
@@ -39,10 +30,7 @@ namespace ItsPronouncedGif
         public void AddPicture(Color[,] picture)
         {
             if (gct is null)
-            {
                 gct = new List<Color>();
-                gct.Add(Color.FromRgb(255, 0, 0));
-            }
 
             int[] pixelData = new int[picture.Length];
 
@@ -200,8 +188,6 @@ namespace ItsPronouncedGif
                 //getting lzw min code
                 int max = pixelData.Max();
 
-                Debug.WriteLine("max: " + max);
-
                 if (max == 0)
                     max = 1;
 
@@ -250,8 +236,6 @@ namespace ItsPronouncedGif
 
             int colorsAmount = Convert.ToInt32(Math.Pow(2, minCode));
 
-            Debug.WriteLine("Colors registered: " + colorsAmount);
-
             int clearCode = colorsAmount;
             int EOIcode = colorsAmount + 1;
 
@@ -265,6 +249,7 @@ namespace ItsPronouncedGif
             string buffer = data[0].ToString();
 
             bool nextAdd1 = false;
+            bool overflow = false;
 
             for(int i = 1; i < data.Length; i++)
             {
@@ -275,9 +260,15 @@ namespace ItsPronouncedGif
                     buffer += strK;
                 else
                 {
+                    codes.Add(buffer + strK);
+                    compressed.Add(codes.IndexOf(buffer));
+
+                    buffer = k.ToString();
+
                     if (codes.Count == 4096) //limit for the mincode
                     {
-                        break; //temp solution
+                        overflow = true;
+
                         compressed.Add(clearCode);
 
                         List<int> tempData = new List<int>();
@@ -287,14 +278,8 @@ namespace ItsPronouncedGif
 
                         compressed.AddRange(LZWCompression(tempData.ToArray(), oldMinCode));
                         compressed.RemoveAt(compressed.Count - 1);
-                        compressed.RemoveAt(compressed.Count - 1);
+                        break;
                     }
-
-                    codes.Add(buffer + strK);
-                    compressed.Add(codes.IndexOf(buffer));
-
-                    buffer = k.ToString();
-
 
                     if (nextAdd1)
                     {
@@ -309,9 +294,11 @@ namespace ItsPronouncedGif
                         minCode++;
                     }
                 }
+
             }
 
-            compressed.Add(codes.IndexOf(buffer));
+            if(!overflow)
+                compressed.Add(codes.IndexOf(buffer));
             compressed.Add(EOIcode);
 
             return compressed.ToArray();
@@ -320,6 +307,10 @@ namespace ItsPronouncedGif
         byte[] GetBytes(int[] lzwData, int minCode)
         {
             string input = string.Empty;
+
+            int clearCode = (int)Math.Pow(2, minCode);
+
+            int oldMinCode = minCode;
 
             foreach(var d in lzwData)
             {
@@ -330,6 +321,9 @@ namespace ItsPronouncedGif
                 }
 
                 input = Convert.ToString(d, 2).PadLeft(minCode + 1, '0') + input;
+
+                if (d == clearCode)
+                    minCode = oldMinCode;
             }
 
             if (input.Length % 8 != 0)
