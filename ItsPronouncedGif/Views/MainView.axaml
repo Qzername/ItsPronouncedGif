@@ -3,26 +3,38 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:ItsPronouncedGif.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="520"
              x:Class="ItsPronouncedGif.Views.MainView"
              x:DataType="vm:MainViewModel">
   <Design.DataContext>
     <vm:MainViewModel />
   </Design.DataContext>
-    
 
-	<Panel VerticalAlignment="Center" HorizontalAlignment="Center">
-		<StackPanel Orientation="Horizontal">
-			<StackPanel>
-				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding width}" Watermark="Width"/>
+
+	<DockPanel>
+		<Panel IsHitTestVisible="False" DockPanel.Dock="Top" Height="20" Background="#731DD8" >
+			
+		</Panel>
+		<Panel DockPanel.Dock="Left" Width="{Binding width}" Height="{Binding height}" Background="Transparent">
+			<Border BorderThickness="5,5,0,0" Width="100" Height="100" VerticalAlignment="Top" HorizontalAlignment="Left"  BorderBrush="#DFC2F2"/>
+			<Border BorderThickness="0,5,5,0" Width="100" Height="100" VerticalAlignment="Top" HorizontalAlignment="Right"  BorderBrush="#DFC2F2"/>
+			<Border BorderThickness="0,0,5,5" Width="100" Height="100" VerticalAlignment="Bottom" HorizontalAlignment="Right"  BorderBrush="#DFC2F2"/>
+			<Border BorderThickness="5,0,0,5" Width="100" Height="100" VerticalAlignment="Bottom" HorizontalAlignment="Left"  BorderBrush="#DFC2F2"/>
+		</Panel>
+		<Panel Background="#731DD8" Width="200" Height="{Binding height}">
+			<StackPanel Margin="10">
+				<TextBlock TextAlignment="Center" FontSize="20" Text="ItsPronouncedGif"/>
+				<TextBlock TextAlignment="Center" FontSize="12" Text="alpha 1"/>
+				
+				<TextBlock Text="Width:"/>
+				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding width}"/>
+				<TextBlock Text="Height:"/>
 				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding height}" Watermark="Height"/>
-				<TextBox Text="{Binding x}"  Watermark="X pos"/>
-				<TextBox Text="{Binding y}"  Watermark="Y pos"/>
-				<Button IsEnabled="{Binding !isRecording}" Command="{Binding AddFrame}">Add Frame</Button>
-				<Button IsEnabled="{Binding !isRecording}" Command="{Binding Record}">Start recording</Button>
-				<Button IsEnabled="{Binding isRecording}" Command="{Binding StopRecord}">Stop recording</Button>
-				<Button IsEnabled="{Binding !isRecording}" Command="{Binding Compile}">Compile</Button>
 			</StackPanel>
-		</StackPanel>
-	</Panel>
+			<StackPanel Margin="10" VerticalAlignment="Bottom" Orientation="Horizontal">
+				<Button Width="90" IsEnabled="{Binding !isRecording}" Command="{Binding Record}">Start recording</Button>
+				<Button Width="90" IsEnabled="{Binding isRecording}" Command="{Binding StopRecord}">Stop recording</Button>
+			</StackPanel>
+		</Panel>
+	</DockPanel>
 </UserControl>
