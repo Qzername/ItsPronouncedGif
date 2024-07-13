@@ -159,7 +159,7 @@ namespace ItsPronouncedGif
                 packedField.CopyTo(b, 0);
                 writer.Write(b);
 
-                writer.Write((short)100); //delay time
+                writer.Write((short)20); //delay time
                 writer.Write((byte)0); //transparent color index
                 writer.Write((byte)0); //block terminator
 

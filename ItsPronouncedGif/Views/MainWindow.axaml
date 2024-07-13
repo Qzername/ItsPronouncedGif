@@ -11,10 +11,13 @@
 		
 	    Background="Transparent"
 		
-		CanResize="False"
+		CanResize="True"
 		
 		Width="800"
 		Height="520"
+		
+		MinWidth="400"
+		MinHeight="200"
 		
 		SystemDecorations="None"
 		ExtendClientAreaToDecorationsHint="True"

@@ -12,4 +12,10 @@ public partial class MainWindow : Window
 
         InitializeComponent();
     }
+
+    public void ChangeSizeOfWindow(int width, int height)
+    {
+        Width = width;
+        Height = height;
+    }
 }
