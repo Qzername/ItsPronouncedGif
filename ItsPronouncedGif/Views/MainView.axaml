@@ -21,11 +21,17 @@
 				<TextBlock Text="Width:"/>
 				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding Width}"/>
 				<TextBlock Text="Height:"/>
-				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding Height}" Watermark="Height"/>
+				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding Height}"/>
+				<TextBlock Text="Max FPS:"/>
+				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding maxFPS}"/>
 			</StackPanel>
-			<StackPanel Margin="10" VerticalAlignment="Bottom" Orientation="Horizontal">
-				<Button Width="90" IsEnabled="{Binding !isRecording}" Command="{Binding Record}">Start recording</Button>
-				<Button Width="90" IsEnabled="{Binding isRecording}" Command="{Binding StopRecord}">Stop recording</Button>
+			
+			<StackPanel Margin="10" VerticalAlignment="Bottom">
+				<TextBlock IsVisible="{Binding !isTextBoxesEnabled}" Text="{Binding currentFPS, StringFormat='Current fps: {0}'}"/>
+				<StackPanel Orientation="Horizontal">
+					<Button Width="90" IsEnabled="{Binding !isRecording}" Command="{Binding Record}">Start recording</Button>
+					<Button Width="90" IsEnabled="{Binding isRecording}" Command="{Binding StopRecord}">Stop recording</Button>
+				</StackPanel>
 			</StackPanel>
 		</Panel>
 		<Panel DockPanel.Dock="Left" Background="Transparent">

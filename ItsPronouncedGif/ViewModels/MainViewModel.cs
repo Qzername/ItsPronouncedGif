@@ -35,6 +35,9 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    [Reactive] int maxFPS { get; set; } = 10;
+    [Reactive] float currentFPS { get; set; } = 0;
+
     [Reactive] bool isTextBoxesEnabled { get; set; } = true;
     [Reactive] bool isRecording { get; set; } = false;
 
@@ -66,13 +69,24 @@ public class MainViewModel : ViewModelBase
 
         recording = new Task(async () =>
         {
+            int fpsToFpsDuration = Convert.ToInt32(1000f / maxFPS);
+
             while(isRecording)
             {
-                var pos = MainWindow.Instance.Position;
+                var frameStart = DateTime.Now;
 
+                var pos = MainWindow.Instance.Position;
                 gif.AddPicture(screen.CaptureScreen(pos.X + 5, pos.Y + 25, Width - 10, Height - 10));
 
-                await Task.Delay(20);
+                var frameEnd = DateTime.Now;
+
+                var diff = frameEnd - frameStart;
+                int remaningTime = fpsToFpsDuration - diff.Milliseconds;
+
+                if (remaningTime > 0)
+                    await Task.Delay(remaningTime);
+
+                currentFPS = 1000 / (DateTime.Now - frameStart).Milliseconds;
             }
         });
 
