@@ -16,18 +16,18 @@ namespace ItsPronouncedGif
         int width, height;
 
         Stream stream;
-        List<int[]> pictures;
+        List<PictureData> pictures;
 
         List<Color> gct;
 
         public GifCreator(int width, int height)
         {
-            pictures = new List<int[]>();
+            pictures = new List<PictureData>();
             this.width = width;
             this.height = height;
         }
 
-        public void AddPicture(Color[,] picture)
+        public void AddPicture(Color[,] picture, int delay)
         {
             if (gct is null)
                 gct = new List<Color>();
@@ -59,7 +59,11 @@ namespace ItsPronouncedGif
                 }
             }
                 
-            pictures.Add(pixelData);
+            pictures.Add(new PictureData()
+            {
+                Delay = delay,
+                PixelData = pixelData,
+            });
         }
 
         public void Compile(string path)
@@ -132,6 +136,8 @@ namespace ItsPronouncedGif
             // --- Pictures ---
             for (int i = 0; i < pictures.Count;i++)
             {
+                var currentPicture = pictures[i];
+
                 // --- GCE ---
                 writer.Write((byte)0x21); //extension introducer
                 writer.Write((byte)0xF9); // GCL
@@ -159,7 +165,7 @@ namespace ItsPronouncedGif
                 packedField.CopyTo(b, 0);
                 writer.Write(b);
 
-                writer.Write((short)20); //delay time
+                writer.Write((ushort)currentPicture.Delay/10); //delay time (in 0,01s)
                 writer.Write((byte)0); //transparent color index
                 writer.Write((byte)0); //block terminator
 
@@ -184,7 +190,7 @@ namespace ItsPronouncedGif
                 writer.Write(b);
 
                 //Picture data
-                int[] pixelData = pictures[i];
+                int[] pixelData = currentPicture.PixelData;
                 //getting lzw min code
                 int max = pixelData.Max();
 
@@ -338,5 +344,11 @@ namespace ItsPronouncedGif
 
             return bytes;
         }
+    }
+
+    struct PictureData
+    {
+        public int Delay;
+        public int[] PixelData;
     }
 }

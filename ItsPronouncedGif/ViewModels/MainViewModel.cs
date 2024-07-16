@@ -70,26 +70,36 @@ public class MainViewModel : ViewModelBase
         recording = new Task(async () =>
         {
             int fpsToFpsDuration = Convert.ToInt32(1000f / maxFPS);
+            currentFPS = maxFPS;
 
             while(isRecording)
             {
                 var frameStart = DateTime.Now;
 
                 var pos = MainWindow.Instance.Position;
-                gif.AddPicture(screen.CaptureScreen(pos.X + 5, pos.Y + 25, Width - 10, Height - 10));
+
+                gif.AddPicture(screen.CaptureScreen(pos.X + 5, pos.Y + 25, Width - 10, Height - 10), Convert.ToInt32(1000/currentFPS));
 
                 var frameEnd = DateTime.Now;
 
                 var diff = frameEnd - frameStart;
                 int remaningTime = fpsToFpsDuration - diff.Milliseconds;
 
+                if (remaningTime == 0)
+                    continue;
+
                 if (remaningTime > 0)
                     await Task.Delay(remaningTime);
 
-                currentFPS = 1000 / (DateTime.Now - frameStart).Milliseconds;
+                int ms = (DateTime.Now - frameStart).Milliseconds;
+
+                if (ms == 0)
+                    continue;
+
+                currentFPS = 1000 / ms;
             }
         });
-
+            
         recording.Start();
     }
 

@@ -16,7 +16,7 @@
 		<Panel DockPanel.Dock="Right" Background="#731DD8" Width="200">
 			<StackPanel Margin="10">
 				<TextBlock TextAlignment="Center" FontSize="20" Text="ItsPronouncedGif"/>
-				<TextBlock TextAlignment="Center" FontSize="12" Text="v1.0"/>
+				<TextBlock TextAlignment="Center" FontSize="12" Text="v1.1"/>
 
 				<TextBlock Text="Width:"/>
 				<TextBox IsEnabled="{Binding isTextBoxesEnabled}" Text="{Binding Width}"/>
