@@ -10,6 +10,11 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
+  
+  <ItemGroup>
+    <None Remove="Assets\gificon.ico" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.0.11" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.11" />

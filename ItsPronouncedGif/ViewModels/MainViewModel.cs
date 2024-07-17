@@ -1,6 +1,9 @@
-﻿using Avalonia.Controls;
+﻿using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using ItsPronouncedGif.ScreenInteractions;
 using ItsPronouncedGif.Views;
 using ReactiveUI;
@@ -38,6 +41,14 @@ public class MainViewModel : ViewModelBase
     [Reactive] int maxFPS { get; set; } = 10;
     [Reactive] float currentFPS { get; set; } = 0;
 
+    [Reactive] bool prerollActive { get; set; } = true;
+    [Reactive] int prerollTime { get; set; } = 5;
+
+    [Reactive] bool showPrerollCounter { get; set; } = false;
+    [Reactive] int prerollTimerCurrent { get; set; } = 0;
+
+    [Reactive] bool showCursor { get; set; } = true;
+
     [Reactive] bool isTextBoxesEnabled { get; set; } = true;
     [Reactive] bool isRecording { get; set; } = false;
 
@@ -50,6 +61,8 @@ public class MainViewModel : ViewModelBase
     //or by manually writting width and height into textboxes
     bool manualChange = false;
 
+    string fileDir;
+
     public MainViewModel()
     {
         screen = new Screen();
@@ -57,22 +70,43 @@ public class MainViewModel : ViewModelBase
         MainWindow.Instance.Resized += WindowResized;
     }
 
-    public void Record()
+    public async void Record()
     {
-        if (isTextBoxesEnabled)
-        {
-            gif = new GifCreator(Width-10, Height-10);
-            isTextBoxesEnabled = false;
-        }
+        string fileDir = await FileSelection();
+
+        if (fileDir == string.Empty)
+            return;
+
+        this.fileDir = fileDir;
+
+        gif = new GifCreator(Width - 10, Height - 10);
 
         isRecording = true;
+        MainWindow.Instance.ChangeRecordingSettings(isRecording);
+        
+        screen.SwitchShowCursor(showCursor);
 
         recording = new Task(async () =>
         {
+            //preroll handling
+            showPrerollCounter = true;
+
+            prerollTimerCurrent = prerollActive ? prerollTime : 0;
+
+            while(prerollTimerCurrent > 0)
+            {
+                prerollTimerCurrent--;
+                await Task.Delay(1000);
+            }
+
+            showPrerollCounter = false;
+            isTextBoxesEnabled = false;
+
+            //main recording
             int fpsToFpsDuration = Convert.ToInt32(1000f / maxFPS);
             currentFPS = maxFPS;
 
-            while(isRecording)
+            while (isRecording)
             {
                 var frameStart = DateTime.Now;
 
@@ -83,12 +117,11 @@ public class MainViewModel : ViewModelBase
                 var frameEnd = DateTime.Now;
 
                 var diff = frameEnd - frameStart;
+
+                //check the time to the next frame and delay task when needed
                 int remaningTime = fpsToFpsDuration - diff.Milliseconds;
 
-                if (remaningTime == 0)
-                    continue;
-
-                if (remaningTime > 0)
+                if (remaningTime > 0) 
                     await Task.Delay(remaningTime);
 
                 int ms = (DateTime.Now - frameStart).Milliseconds;
@@ -106,14 +139,28 @@ public class MainViewModel : ViewModelBase
     public void StopRecord()
     {
         isRecording = false;
+        MainWindow.Instance.ChangeRecordingSettings(isRecording);
 
-        gif.Compile("./result.gif");
+        if (showPrerollCounter)
+        {
+            showPrerollCounter = false;
+            return;
+        }
+
+        gif.Compile(fileDir);
 
         isTextBoxesEnabled = true;
     }
 
-    private void WindowResized(object? sender, WindowResizedEventArgs e)
+    public void OpenCredits()
     {
+        new Credits().ShowDialog(MainWindow.Instance);
+    }
+
+    void WindowResized(object? sender, WindowResizedEventArgs e)
+    {
+        //i had to do this because program has to detect
+        //either the resize was caused by textbox or dragging edge of the window
         if(manualChange)
         {
             manualChange = false;
@@ -127,6 +174,28 @@ public class MainViewModel : ViewModelBase
 
         this.RaisePropertyChanged(nameof(Width));
         this.RaisePropertyChanged(nameof(Height));
+    }
+
+    async Task<string> FileSelection()
+    {
+        string result = string.Empty;
+
+        if (Application.Current!.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var file = await desktop.MainWindow!.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions()
+            {
+                Title = "Save gif recording as...",
+                DefaultExtension = "gif",
+                ShowOverwritePrompt = true,
+            });
+
+            if (file is null)
+                return string.Empty;
+
+            return file.Path.AbsolutePath;
+        }
+
+        return string.Empty;
     }
 
     void ChangeWindowSize(int width, int height)

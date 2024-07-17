@@ -8,7 +8,7 @@ namespace ItsPronouncedGif.ScreenInteractions
     /// </summary>
     public class Screen
     {
-        ISystemScreenHandler currentHandler;
+        SystemScreenHandler currentHandler;
 
         public Screen()
         {
@@ -20,5 +20,12 @@ namespace ItsPronouncedGif.ScreenInteractions
 
         public Color[,] CaptureScreen(int x, int y, int width, int height) => currentHandler.CaptureScreen(x, y, width, height);
         public ScreenResolution GetResolution() => currentHandler.GetScreenResolution();
+        public void SwitchShowCursor(bool showCursor)
+        {
+            currentHandler.SetSettings(new ScreenSettings()
+            {
+                ShowCursor = showCursor
+            });
+        }
     }
 }

@@ -6,12 +6,13 @@
         xmlns:views="clr-namespace:ItsPronouncedGif.Views"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="ItsPronouncedGif.Views.MainWindow"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/gificon.ico"
         Title="ItsPronouncedGif"
 		
 	    Background="Transparent"
 		
 		CanResize="True"
+		Topmost="True"
 		
 		Width="800"
 		Height="520"
@@ -19,8 +20,9 @@
 		MinWidth="400"
 		MinHeight="200"
 		
-		SystemDecorations="None"
 		ExtendClientAreaToDecorationsHint="True"
-		ExtendClientAreaTitleBarHeightHint="20">
+		ExtendClientAreaTitleBarHeightHint="20"
+		
+		WindowStartupLocation="CenterScreen">
         <views:MainView />
 </Window>

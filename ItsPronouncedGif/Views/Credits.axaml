@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="250" d:DesignHeight="150"
+        x:Class="ItsPronouncedGif.Views.Credits"
+        Title="Credits"
+		
+		Width="250"
+		Height="150"
+		
+		CanResize="False"
+		
+		ExtendClientAreaToDecorationsHint="True"
+		ExtendClientAreaTitleBarHeightHint="20"
+		
+		WindowStartupLocation="CenterScreen">
+	<DockPanel>
+		<Panel DockPanel.Dock="Top" Height="20" IsHitTestVisible="False" Background="#933DF8"/>
+		<Panel Background="#731DD8">
+			<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+				<TextBlock FontSize="24" Text="ItsPronouncedGif" FontWeight="Bold"/>
+				<TextBlock HorizontalAlignment="Center" FontSize="12" Text="Made by Qzername"/>
+			</StackPanel>
+
+			<Button Click="ClickHandler" VerticalAlignment="Bottom"  Margin="5" Padding="0">Github</Button>
+		</Panel>
+	</DockPanel>
+	
+	
+</Window>
