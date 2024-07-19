@@ -52,14 +52,10 @@ namespace ItsPronouncedGif.ScreenInteractions
                         CURSORINFO pci;
                         pci.cbSize = Marshal.SizeOf(typeof(CURSORINFO));
 
-                        Debug.WriteLine("uuw");
-
                         if (GetCursorInfo(out pci))
                         {
-                            Debug.WriteLine("uww");
                             if (pci.flags == CURSOR_SHOWING)
                             {
-                                Debug.WriteLine("uwu");
                                 DrawIcon(g.GetHdc(), pci.ptScreenPos.x - x, pci.ptScreenPos.y - y, pci.hCursor);
                                 g.ReleaseHdc();
                             }
