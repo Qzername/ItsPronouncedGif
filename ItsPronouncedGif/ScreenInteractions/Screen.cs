@@ -1,4 +1,5 @@
 ﻿using Avalonia.Media;
+using ItsPronouncedGif.ScreenInteractions.Windows;
 using System;
 
 namespace ItsPronouncedGif.ScreenInteractions
@@ -13,7 +14,7 @@ namespace ItsPronouncedGif.ScreenInteractions
         public Screen()
         {
             if (OperatingSystem.IsWindows())
-                currentHandler = new Windows();
+                currentHandler = new WindowsBitmap();
             else
                 throw new Exception("Current operating system is not supported (yet)");
         }
