@@ -171,8 +171,8 @@ namespace ItsPronouncedGif
                 writer.Write(b);
 
                 writer.Write((ushort)currentPicture.Delay/10); //delay time (in 0,01s)
-                writer.Write((byte)0); //transparent color index
-                writer.Write((byte)0); //block terminator
+              /*writer.Write((byte)0); //transparent color index
+                writer.Write((byte)0); //block terminator*/
 
                 // --- Picture --- 
                 //Picture descriptor
