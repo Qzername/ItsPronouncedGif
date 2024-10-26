@@ -25,37 +25,42 @@ namespace ItsPronouncedGif
             pictures = new List<PictureData>();
             this.width = width;
             this.height = height;
+
+            /*
+             * create static gct
+             * it is not efficient, but for time of writing this comment,
+             * im foccusing on increasing performance of screen capture
+             */
+            gct = new List<Color>();
+
+            byte interval = 256 / 6;
+
+            for (byte x = 0; x < 6; x++)
+                for (byte y = 0; y < 6; y++)
+                    for (byte z = 0; z < 6; z++)
+                        gct.Add(new Color(255, (byte)(x * interval), 
+                                               (byte)(y * interval), 
+                                               (byte)(z * interval)));
+
+            for (byte i = 0; i < 40; i++)
+                gct.Add(new Color(255, 0, 0, 0));
         }
 
         public void AddPicture(Color[,] picture, int delay)
         {
-            if (gct is null)
-                gct = new List<Color>();
-
             int[] pixelData = new int[picture.Length];
 
-            //temp solution
+            byte interval = 256 / 5;
+
             for (int y = 0; y < picture.GetLength(1);y++)
             {
-                string keys = string.Empty;
-
                 for (int x = 0; x < picture.GetLength(0); x++)
                 {
                     var color = picture[x, y];
 
-                    if (gct.Contains(color))
-                    {
-                        pixelData[y * width + x] = gct.IndexOf(color);
-                    }
-                    else if (gct.Count == 256)
-                        pixelData[y * width + x] = 0;
-                    else
-                    {
-                        pixelData[y * width + x] = gct.Count;
-                        gct.Add(color);
-                    }
+                    int index = (color.R / interval) * 36 + (color.G / interval) * 6 + (color.B / interval);
 
-                    keys += gct[pixelData[y * width + x]] + " ";
+                    pixelData[y * width + x] = index;
                 }
             }
                 
