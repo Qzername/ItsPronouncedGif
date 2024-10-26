@@ -12,7 +12,7 @@
 	    Background="Transparent"
 		
 		CanResize="True"
-		Topmost="True"
+		Topmost="False"
 		
 		Width="800"
 		Height="520"

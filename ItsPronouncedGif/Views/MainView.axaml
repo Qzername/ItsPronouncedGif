@@ -16,7 +16,7 @@
 			<Panel IsHitTestVisible="False" Background="#731DD8"/>
 			<StackPanel Orientation="Horizontal" >
 				<TextBlock Margin="5,1,0,0" VerticalAlignment="Center" FontSize="12" Text="ItsPronouncedGif - "/>
-				<Button Command="{Binding OpenCredits}" IsHitTestVisible="True" VerticalAlignment="Center" Content="1.1v" Background="Transparent" FontSize="12" Padding="0" Margin="0"/>
+				<Button Command="{Binding OpenCredits}" IsHitTestVisible="True" VerticalAlignment="Center" Content="1.2v" Background="Transparent" FontSize="12" Padding="0" Margin="0"/>
 			</StackPanel>
 		</Panel>
 

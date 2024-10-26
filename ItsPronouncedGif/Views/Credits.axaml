@@ -4,6 +4,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="250" d:DesignHeight="150"
         x:Class="ItsPronouncedGif.Views.Credits"
+		Icon="/Assets/gificon.ico"
+		
         Title="Credits"
 		
 		Width="250"
