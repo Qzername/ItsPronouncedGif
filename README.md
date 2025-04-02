@@ -1,5 +1,8 @@
 # ItsPronouncedGif
 
+> [!WARNING]
+> The app itself is slow, I will improve the speed of both recording and compiling gif in future
+
 Simple tool for making gifs
 
 Requires dotnet 7.0 runtime to work and it runs (for now) only on windows
