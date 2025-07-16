@@ -38,8 +38,8 @@ namespace ItsPronouncedGif
             for (byte x = 0; x < 6; x++)
                 for (byte y = 0; y < 6; y++)
                     for (byte z = 0; z < 6; z++)
-                        gct.Add(new Color(255, (byte)(x * interval), 
-                                               (byte)(y * interval), 
+                        gct.Add(new Color(255, (byte)(x * interval),
+                                               (byte)(y * interval),
                                                (byte)(z * interval)));
 
             for (byte i = 0; i < 40; i++)
@@ -52,7 +52,7 @@ namespace ItsPronouncedGif
 
             byte interval = 256 / 5;
 
-            for (int y = 0; y < picture.GetLength(1);y++)
+            for (int y = 0; y < picture.GetLength(1); y++)
             {
                 for (int x = 0; x < picture.GetLength(0); x++)
                 {
@@ -63,7 +63,7 @@ namespace ItsPronouncedGif
                     pixelData[y * width + x] = index;
                 }
             }
-                
+
             pictures.Add(new PictureData()
             {
                 Delay = delay,
@@ -82,14 +82,14 @@ namespace ItsPronouncedGif
             StartFile(fileWriter);
 
             // --- Pictures ---
-            for (int i = 0; i < pictures.Count;i++)
+            for (int i = 0; i < pictures.Count; i++)
             {
                 var currentPicture = pictures[i];
                 CompilePicture(fileWriter, currentPicture);
             }
 
             FinishFile(fileWriter);
-            
+
             stream.Close();
         }
 
@@ -220,7 +220,7 @@ namespace ItsPronouncedGif
 
             if (minCode < 2)
                 minCode = 2;
-            
+
             var aa = DateTime.Now;
             var data = LZWCompression(pixelData, minCode);
 
@@ -290,12 +290,12 @@ namespace ItsPronouncedGif
             bool nextAdd1 = false;
             bool overflow = false;
 
-            for(int i = 1; i < data.Length; i++)
+            for (int i = 1; i < data.Length; i++)
             {
                 var k = data[i];
                 string strK = $" {k}";
 
-                if(codesHashMap.ContainsKey(buffer+strK))
+                if (codesHashMap.ContainsKey(buffer + strK))
                     buffer += strK;
                 else
                 {
@@ -336,7 +336,7 @@ namespace ItsPronouncedGif
 
             }
 
-            if(!overflow)
+            if (!overflow)
                 compressed.Add(codesHashMap[buffer]);
 
             compressed.Add(EOIcode);
@@ -346,41 +346,57 @@ namespace ItsPronouncedGif
 
         byte[] GetBytes(int[] lzwData, int minCode)
         {
-            string input = string.Empty;
+            List<byte> output = new List<byte>();
+            int bitBuffer = 0;
+            int bitCount = 0;
 
-            int clearCode = (int)Math.Pow(2, minCode);
+            int clearCode = 1 << minCode;
+            int currentCodeSize = minCode + 1;
+            int maxCodeSize = 12; // per LZW spec
 
+            int codeSizeLimit = 1 << currentCodeSize;
             int oldMinCode = minCode;
 
-            foreach(var d in lzwData)
+            foreach (var code in lzwData)
             {
-                if(d == -1)
+                if (code == -1)
                 {
-                    minCode++;
+                    currentCodeSize++;
+                    if (currentCodeSize > maxCodeSize)
+                        currentCodeSize = maxCodeSize;
+
+                    codeSizeLimit = 1 << currentCodeSize;
                     continue;
                 }
 
-                input = Convert.ToString(d, 2).PadLeft(minCode + 1, '0') + input;
+                // Add bits of the current code to buffer
+                bitBuffer |= code << bitCount;
+                bitCount += currentCodeSize;
 
-                if (d == clearCode)
-                    minCode = oldMinCode;
+                // Flush full bytes from buffer
+                while (bitCount >= 8)
+                {
+                    output.Add((byte)(bitBuffer & 0xFF));
+                    bitBuffer >>= 8;
+                    bitCount -= 8;
+                }
+
+                if (code == clearCode)
+                {
+                    currentCodeSize = minCode + 1;
+                    codeSizeLimit = 1 << currentCodeSize;
+                }
             }
 
-            if (input.Length % 8 != 0)
-                input = input.PadLeft(((input.Length / 8 + 1) * 8) , '0');
+            // Flush remaining bits
+            if (bitCount > 0)
+                output.Add((byte)(bitBuffer & 0xFF));
 
-            //convert string back to bytes
-            int nBytes = input.Length / 8;
-            var bytesAsStrings =
-                Enumerable.Range(0, nBytes)
-                          .Select(i => input.Substring(8 * i, 8)).Reverse();
-            byte[] bytes = bytesAsStrings.Select(s => Convert.ToByte(s, 2)).ToArray();
-
-            return bytes;
+            return output.ToArray();
         }
     }
 
-    struct PictureData
+        struct PictureData
     {
         public int Delay;
         public int[] PixelData;
