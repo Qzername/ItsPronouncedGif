@@ -7,6 +7,6 @@ Simple tool for making gifs
 
 ![image](https://github.com/user-attachments/assets/ec92039e-bdc6-44be-a9f0-1fbec73874d5)
 
-### Todo for v1.2:
+### Todo for v1.3.0:
 
 - Better color handling
