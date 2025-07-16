@@ -77,28 +77,44 @@ namespace ItsPronouncedGif
                 gct.Add(Color.FromRgb(0, 0, 0));
 
             stream = new FileStream(path, FileMode.Create);
-            BinaryWriter writer = new BinaryWriter(stream);
+            BinaryWriter fileWriter = new BinaryWriter(stream);
 
+            StartFile(fileWriter);
+
+            // --- Pictures ---
+            for (int i = 0; i < pictures.Count;i++)
+            {
+                var currentPicture = pictures[i];
+                CompilePicture(fileWriter, currentPicture);
+            }
+
+            FinishFile(fileWriter);
+            
+            stream.Close();
+        }
+
+        void StartFile(BinaryWriter fileWriter)
+        {
             //Header - version of gif
-            writer.Write(new char[3] { 'G', 'I', 'F' });
-            writer.Write(new char[3] { '8', '9', 'a' });
+            fileWriter.Write(new char[3] { 'G', 'I', 'F' });
+            fileWriter.Write(new char[3] { '8', '9', 'a' });
 
             // --- LSD ---
 
             //width and height  
-            writer.Write((short)width);
-            writer.Write((short)height);
+            fileWriter.Write((short)width);
+            fileWriter.Write((short)height);
 
             //Color table information
             BitArray cti = new BitArray(new byte[1]);
 
             //Color table requirement
-            cti[0] = true; 
+            cti[0] = true;
             cti[1] = true;
             cti[2] = true;
 
             //Is sorted
-            cti[3] = false; 
+            cti[3] = false;
 
             //Bits per sample 
             cti[4] = true;
@@ -108,131 +124,143 @@ namespace ItsPronouncedGif
             //Global Color Table
             cti[7] = true;
 
-            byte[] b = new byte[1]; 
-            cti.CopyTo(b,0);
-            writer.Write(b);
+            byte[] b = new byte[1];
+            cti.CopyTo(b, 0);
+            fileWriter.Write(b);
 
             //Background color index
-            writer.Write(Convert.ToByte(0));
+            fileWriter.Write(Convert.ToByte(0));
 
             //Pixel aspect ratio
-            writer.Write(Convert.ToByte(0));
+            fileWriter.Write(Convert.ToByte(0));
 
             // --- GCT --- 
-            foreach(var c in gct)
-            { 
-                writer.Write(c.R);
-                writer.Write(c.G);
-                writer.Write(c.B);
+            foreach (var c in gct)
+            {
+                fileWriter.Write(c.R);
+                fileWriter.Write(c.G);
+                fileWriter.Write(c.B);
             }
 
             // --- Application Extension --- 
-            writer.Write((byte)0x21); //extension introducer
-            writer.Write((byte)0xFF);
-            writer.Write((byte)0x0B); //11 bytes comming
-            writer.Write(new char[8] { 'N', 'E', 'T', 'S', 'C', 'A', 'P', 'E' });
-            writer.Write(new char[3] { '2', '.', '0' });
-            writer.Write((byte)0x03);
-            writer.Write((byte)0x01);
-            writer.Write((byte)0);
-            writer.Write((byte)0);
-            writer.Write((byte)0);
+            fileWriter.Write((byte)0x21); //extension introducer
+            fileWriter.Write((byte)0xFF);
+            fileWriter.Write((byte)0x0B); //11 bytes comming
+            fileWriter.Write(['N', 'E', 'T', 'S', 'C', 'A', 'P', 'E']);
+            fileWriter.Write(['2', '.', '0']);
+            fileWriter.Write((byte)0x03);
+            fileWriter.Write((byte)0x01);
+            fileWriter.Write((byte)0);
+            fileWriter.Write((byte)0);
+            fileWriter.Write((byte)0);
+        }
 
-            // --- Pictures ---
-            for (int i = 0; i < pictures.Count;i++)
+        void CompilePicture(BinaryWriter fileWriter, PictureData pictureData)
+        {
+            // --- GCE ---
+            fileWriter.Write((byte)0x21); //extension introducer
+            fileWriter.Write((byte)0xF9); // GCL
+            fileWriter.Write((byte)4); // 4 bytes comming
+
+            BitArray packedField = new BitArray(new byte[1]);
+
+            //Transparent color flag
+            packedField[0] = false;
+
+            //User input flag
+            packedField[1] = false;
+
+            //disposal method
+            packedField[2] = true;
+            packedField[3] = false;
+            packedField[4] = false;
+
+            //not used
+            packedField[5] = false;
+            packedField[6] = false;
+            packedField[7] = false;
+
+            byte[] b = new byte[1];
+            packedField.CopyTo(b, 0);
+            fileWriter.Write(b);
+
+            fileWriter.Write((ushort)pictureData.Delay / 10); //delay time (in 0,01s)
+            /*writer.Write((byte)0); //transparent color index
+              writer.Write((byte)0); //block terminator*/
+
+            // --- Picture --- 
+            //Picture descriptor
+            fileWriter.Write(Convert.ToByte(0x2c)); //img separator character
+            fileWriter.Write(Convert.ToInt16(0)); //img left position
+            fileWriter.Write(Convert.ToInt16(0)); //img top positon                    
+            fileWriter.Write(Convert.ToInt16(width)); //img width                    
+            fileWriter.Write(Convert.ToInt16(height)); //img height
+
+            var desc = new BitArray(new byte[1]);
+            desc[0] = false; // local color table present
+            desc[1] = false; // img not interlaced
+            desc[2] = false; // sort flag
+            desc[5] = false; // size of local color table
+            desc[6] = false;
+            desc[7] = false;
+
+            b = new byte[1];
+            desc.CopyTo(b, 0);
+            fileWriter.Write(b);
+
+            //Picture data
+            int[] pixelData = pictureData.PixelData;
+            //getting lzw min code
+            int max = pixelData.Max();
+
+            if (max == 0)
+                max = 1;
+
+            int minCode = Convert.ToInt32(Math.Ceiling(Math.Log2(max + 1)));
+
+            if (minCode < 2)
+                minCode = 2;
+            
+            var aa = DateTime.Now;
+            var data = LZWCompression(pixelData, minCode);
+
+            Debug.WriteLine(data.Length);
+
+            var bb = DateTime.Now;
+
+            b = GetBytes(data, minCode);
+            var cc = DateTime.Now;
+
+            Debug.WriteLine(
+                $"NEW -----------------------\n" +
+                $"Frame compression performance\n" +
+                $"LZW: {(bb - aa).TotalMilliseconds}ms\n" +
+                $"GetBytes: {(cc - bb).TotalMilliseconds}ms");
+
+            fileWriter.Write(Convert.ToByte(minCode)); //lzw minimum code size
+
+            int bytesRemaining = b.Length;
+
+            for (int a = 0; a < Math.Ceiling(b.Length / 255f); a++)
             {
-                var currentPicture = pictures[i];
+                var currentBlockLength = bytesRemaining > 255 ? 255 : bytesRemaining;
 
-                // --- GCE ---
-                writer.Write((byte)0x21); //extension introducer
-                writer.Write((byte)0xF9); // GCL
-                writer.Write((byte)4); // 4 bytes comming
+                fileWriter.Write((byte)currentBlockLength); //number of bytes in sub-block
 
-                BitArray packedField = new BitArray(new byte[1]);
+                for (int Bi = 0; Bi < currentBlockLength; Bi++)
+                    fileWriter.Write(b[Bi + a * 255]);
 
-                //Transparent color flag
-                packedField[0] = false;
-
-                //User input flag
-                packedField[1] = false;
-
-                //disposal method
-                packedField[2] = true;
-                packedField[3] = false;
-                packedField[4] = false;
-
-                //not used
-                packedField[5] = false;
-                packedField[6] = false;
-                packedField[7] = false;
-
-                b = new byte[1];
-                packedField.CopyTo(b, 0);
-                writer.Write(b);
-
-                writer.Write((ushort)currentPicture.Delay/10); //delay time (in 0,01s)
-              /*writer.Write((byte)0); //transparent color index
-                writer.Write((byte)0); //block terminator*/
-
-                // --- Picture --- 
-                //Picture descriptor
-                writer.Write(Convert.ToByte(0x2c)); //img separator character
-                writer.Write(Convert.ToInt16(0)); //img left position
-                writer.Write(Convert.ToInt16(0)); //img top positon                    
-                writer.Write(Convert.ToInt16(width)); //img width                    
-                writer.Write(Convert.ToInt16(height)); //img height
-
-                var desc = new BitArray(new byte[1]);
-                desc[0] = false; // local color table present
-                desc[1] = false; // img not interlaced
-                desc[2] = false; // sort flag
-                desc[5] = false; // size of local color table
-                desc[6] = false;
-                desc[7] = false;
-
-                b = new byte[1];
-                desc.CopyTo(b, 0);
-                writer.Write(b);
-
-                //Picture data
-                int[] pixelData = currentPicture.PixelData;
-                //getting lzw min code
-                int max = pixelData.Max();
-
-                if (max == 0)
-                    max = 1;
-
-                int minCode = Convert.ToInt32(Math.Ceiling(Math.Log2(max+1)));
-
-                if (minCode < 2)
-                    minCode = 2;
-
-                var data = LZWCompression(pixelData, minCode);
-                b = GetBytes(data, minCode);
-
-                writer.Write(Convert.ToByte(minCode)); //lzw minimum code size
-
-                int bytesRemaining = b.Length;
-
-                for (int a = 0; a < Math.Ceiling(b.Length / 255f); a++)
-                {
-                    var currentBlockLength = bytesRemaining > 255 ? 255 : bytesRemaining;
-
-                    writer.Write((byte)currentBlockLength); //number of bytes in sub-block
-
-                    for (int Bi = 0; Bi < currentBlockLength; Bi++)
-                        writer.Write(b[Bi + a*255]);
-
-                    bytesRemaining -= 255;
-                }
-
-                writer.Write(Convert.ToByte(0)); //0 bytes comming
+                bytesRemaining -= 255;
             }
 
-            writer.Write(Convert.ToByte(0x3b)); //End of GIF - block terminator
+            fileWriter.Write(Convert.ToByte(0)); //0 bytes comming
+        }
 
-            writer.Close();
-            stream.Close();
+        void FinishFile(BinaryWriter fileWriter)
+        {
+            fileWriter.Write(Convert.ToByte(0x3b)); //End of GIF - block terminator
+
+            fileWriter.Close();
         }
 
         /// <summary>
@@ -242,7 +270,7 @@ namespace ItsPronouncedGif
         {
             int oldMinCode = minCode;
 
-            List<string> codes = new List<string>();
+            Dictionary<string, int> codesHashMap = new Dictionary<string, int>();
             List<int> compressed = new List<int>();
 
             int colorsAmount = Convert.ToInt32(Math.Pow(2, minCode));
@@ -252,8 +280,8 @@ namespace ItsPronouncedGif
 
             //filling color codes wtih additional codes
             for (int i = 0; i < colorsAmount + 2; i++)
-                codes.Add(i.ToString());
-            
+                codesHashMap[i.ToString()] = i;
+
             //send clear code
             compressed.Add(clearCode);
 
@@ -267,16 +295,16 @@ namespace ItsPronouncedGif
                 var k = data[i];
                 string strK = $" {k}";
 
-                if(codes.Contains(buffer + strK))
+                if(codesHashMap.ContainsKey(buffer+strK))
                     buffer += strK;
                 else
                 {
-                    codes.Add(buffer + strK);
-                    compressed.Add(codes.IndexOf(buffer));
+                    codesHashMap[buffer + strK] = codesHashMap.Count;
+                    compressed.Add(codesHashMap[buffer]);
 
                     buffer = k.ToString();
 
-                    if (codes.Count == 4096) //limit for the mincode
+                    if (codesHashMap.Count == 4096) //limit for the mincode
                     {
                         overflow = true;
 
@@ -299,7 +327,7 @@ namespace ItsPronouncedGif
                         continue;
                     }
 
-                    if (Math.Pow(2, minCode + 1) - 1 == codes.Count-1)
+                    if (Math.Pow(2, minCode + 1) - 1 == codesHashMap.Count - 1)
                     {
                         nextAdd1 = true;
                         minCode++;
@@ -309,7 +337,8 @@ namespace ItsPronouncedGif
             }
 
             if(!overflow)
-                compressed.Add(codes.IndexOf(buffer));
+                compressed.Add(codesHashMap[buffer]);
+
             compressed.Add(EOIcode);
 
             return compressed.ToArray();
