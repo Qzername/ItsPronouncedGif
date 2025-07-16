@@ -13,6 +13,6 @@ After you stop the recording, the program may freeze for a moment, as it is comp
 
 ### Todo for v1.2:
 
-- Faster screen recording
-- Faster gif compiling time
+- ~~Faster screen recording~~
+- ~~Faster gif compiling time~~
 - Better color handling
