@@ -48,7 +48,7 @@ namespace ItsPronouncedGif
 
         public void AddPicture(Color[,] picture, int delay)
         {
-            int[] pixelData = new int[picture.Length];
+            int[] pixelData = new int[picture.Length*3];
 
             byte interval = 256 / 5;
 
@@ -56,11 +56,12 @@ namespace ItsPronouncedGif
             {
                 for (int x = 0; x < picture.GetLength(0); x++)
                 {
-                    var color = picture[x, y];
+                    int index = (y * width + x) * 3;
+                    Color currentColor = picture[x, y];
 
-                    int index = (color.R / interval) * 36 + (color.G / interval) * 6 + (color.B / interval);
-
-                    pixelData[y * width + x] = index;
+                    pixelData[index] = currentColor.R;
+                    pixelData[index+1] = currentColor.G;
+                    pixelData[index+2] = currentColor.B;
                 }
             }
 
@@ -108,10 +109,10 @@ namespace ItsPronouncedGif
             //Color table information
             BitArray cti = new BitArray(new byte[1]);
 
-            //Color table requirement
-            cti[0] = true;
-            cti[1] = true;
-            cti[2] = true;
+            //global color table size
+            cti[0] = false;
+            cti[1] = false;
+            cti[2] = false;
 
             //Is sorted
             cti[3] = false;
@@ -122,7 +123,7 @@ namespace ItsPronouncedGif
             cti[6] = false;
 
             //Global Color Table
-            cti[7] = true;
+            cti[7] = false;
 
             byte[] b = new byte[1];
             cti.CopyTo(b, 0);
@@ -133,14 +134,6 @@ namespace ItsPronouncedGif
 
             //Pixel aspect ratio
             fileWriter.Write(Convert.ToByte(0));
-
-            // --- GCT --- 
-            foreach (var c in gct)
-            {
-                fileWriter.Write(c.R);
-                fileWriter.Write(c.G);
-                fileWriter.Write(c.B);
-            }
 
             // --- Application Extension --- 
             fileWriter.Write((byte)0x21); //extension introducer
@@ -197,12 +190,24 @@ namespace ItsPronouncedGif
             fileWriter.Write(Convert.ToInt16(height)); //img height
 
             var desc = new BitArray(new byte[1]);
-            desc[0] = false; // local color table present
-            desc[1] = false; // img not interlaced
-            desc[2] = false; // sort flag
-            desc[5] = false; // size of local color table
+
+            // size of local color table
+            desc[0] = true; 
+            desc[1] = true;
+            desc[2] = true; 
+
+            //reserved for future use
+            desc[3] = false;
+            desc[4] = false;
+
+            // sort flag
+            desc[5] = false;
+
+            // img not interlaced
             desc[6] = false;
-            desc[7] = false;
+
+            // local color table present
+            desc[7] = true;
 
             b = new byte[1];
             desc.CopyTo(b, 0);
@@ -210,6 +215,50 @@ namespace ItsPronouncedGif
 
             //Picture data
             int[] pixelData = pictureData.PixelData;
+
+            OctreeQuantizatior octreeQuantization = new OctreeQuantizatior();
+
+            Debug.WriteLine(pixelData.Length);
+
+            for (int i = 0; i < pixelData.Length; i+=3)
+            {
+                octreeQuantization.AddColor(pixelData[i],
+                                            pixelData[i + 1],
+                                            pixelData[i + 2]);
+            }
+
+            octreeQuantization.GetColor();
+            pixelData = octreeQuantization.Quintize(pixelData, 2);
+
+            var paletteColors = octreeQuantization.Palette.Keys.ToArray();
+
+            //local color table
+            for (int i  = 0; i < paletteColors.Length && i < 256;i++)
+            {
+                var c = paletteColors[i];
+
+                fileWriter.Write((byte)c.R);
+                fileWriter.Write((byte)c.G);
+                fileWriter.Write((byte)c.B);
+            }
+
+            if(paletteColors.Length < 256)
+            {
+                for (int i = paletteColors.Length; i < 256; i++)
+                {
+                    fileWriter.Write((byte)0);
+                    fileWriter.Write((byte)0);
+                    fileWriter.Write((byte)0);
+                }
+            }
+
+            int[] indexedPixelData = new int[pixelData.Length / 3];
+
+            for (int i = 0; i < pixelData.Length; i += 3)
+            {
+                indexedPixelData[i / 3] = octreeQuantization.Palette[new ColorKey(pixelData[i], pixelData[i + 1], pixelData[i + 2])];
+            }
+
             //getting lzw min code
             int max = pixelData.Max();
 
@@ -224,18 +273,10 @@ namespace ItsPronouncedGif
             var aa = DateTime.Now;
             var data = LZWCompression(pixelData, minCode);
 
-            Debug.WriteLine(data.Length);
-
             var bb = DateTime.Now;
 
             b = GetBytes(data, minCode);
             var cc = DateTime.Now;
-
-            Debug.WriteLine(
-                $"NEW -----------------------\n" +
-                $"Frame compression performance\n" +
-                $"LZW: {(bb - aa).TotalMilliseconds}ms\n" +
-                $"GetBytes: {(cc - bb).TotalMilliseconds}ms");
 
             fileWriter.Write(Convert.ToByte(minCode)); //lzw minimum code size
 
