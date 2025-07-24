@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using SD = System.Drawing;
 using System.IO;
 using System.Linq;
 
@@ -218,8 +219,6 @@ namespace ItsPronouncedGif
 
             OctreeQuantizatior octreeQuantization = new OctreeQuantizatior();
 
-            Debug.WriteLine(pixelData.Length);
-
             for (int i = 0; i < pixelData.Length; i+=3)
             {
                 octreeQuantization.AddColor(pixelData[i],
@@ -228,21 +227,22 @@ namespace ItsPronouncedGif
             }
 
             octreeQuantization.GetColor();
-            pixelData = octreeQuantization.Quintize(pixelData, 2);
+            pixelData = octreeQuantization.Quintize(pixelData, 3);
 
             var paletteColors = octreeQuantization.Palette.Keys.ToArray();
 
             //local color table
-            for (int i  = 0; i < paletteColors.Length && i < 256;i++)
+            for (int i = 0; i < paletteColors.Length && i < 256; i++)
             {
                 var c = paletteColors[i];
 
                 fileWriter.Write((byte)c.R);
                 fileWriter.Write((byte)c.G);
                 fileWriter.Write((byte)c.B);
-            }
+            };
 
-            if(paletteColors.Length < 256)
+            //fill remaning colors
+            if (paletteColors.Length < 256)
             {
                 for (int i = paletteColors.Length; i < 256; i++)
                 {
@@ -252,11 +252,17 @@ namespace ItsPronouncedGif
                 }
             }
 
+            //get indexes
             int[] indexedPixelData = new int[pixelData.Length / 3];
 
             for (int i = 0; i < pixelData.Length; i += 3)
             {
-                indexedPixelData[i / 3] = octreeQuantization.Palette[new ColorKey(pixelData[i], pixelData[i + 1], pixelData[i + 2])];
+                var colorKey = new ColorKey(pixelData[i], pixelData[i + 1], pixelData[i + 2]);
+
+                if (octreeQuantization.Palette.ContainsKey(colorKey))
+                    indexedPixelData[i / 3] = octreeQuantization.Palette[colorKey];
+                else  //fix quantizator so this is no longer needed
+                    indexedPixelData[i / 3] = 255;
             }
 
             //getting lzw min code
@@ -271,7 +277,7 @@ namespace ItsPronouncedGif
                 minCode = 2;
 
             var aa = DateTime.Now;
-            var data = LZWCompression(pixelData, minCode);
+            var data = LZWCompression(indexedPixelData, minCode);
 
             var bb = DateTime.Now;
 
@@ -341,6 +347,7 @@ namespace ItsPronouncedGif
                 else
                 {
                     codesHashMap[buffer + strK] = codesHashMap.Count;
+
                     compressed.Add(codesHashMap[buffer]);
 
                     buffer = k.ToString();

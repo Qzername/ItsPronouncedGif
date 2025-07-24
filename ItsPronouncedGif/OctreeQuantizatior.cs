@@ -38,8 +38,6 @@ namespace ItsPronouncedGif
 
             int[] result = new int[photo.Length];
 
-            Debug.WriteLine(photo[0] + " " + photo[1] + " " + photo[2]);
-
             for (int i = 0; i < photo.Length; i += 3)
             {
                 int r = photo[i];
@@ -50,7 +48,10 @@ namespace ItsPronouncedGif
 
                 if (!Palette.ContainsKey(colorKey))
                 {
-                    Palette[colorKey] = Palette.Count;
+                    //TODO: FIX THIS CODE SO THIS WILL BE NO LONGER NEEDED
+                    if(Palette.Count != 256)
+                        Palette[colorKey] = Palette.Count;
+
                 }
 
                 result[i] = color[0];
